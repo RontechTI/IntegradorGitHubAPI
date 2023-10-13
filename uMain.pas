@@ -143,19 +143,21 @@ begin
     2 : sURLPesquisa := Format('%susers?q=%s&type=org', [GITHUB_API_BASE_URL, aPesquisa]);
   end;
 
-   //ShowMessage( sURLPesquisa);
-
-   case aTipo of
-     1 : RESTRequest1.Method := rmGet;   //TRESTRequestMethod.rmPOST;
-     2 : RESTRequest1.Method := rmPOST;
-     3 : RESTRequest1.Method := rmPUT;
-     4 : RESTRequest1.Method := rmDELETE;
-   end;
+  case aTipo of
+    1 : RESTRequest1.Method := rmGet;   //TRESTRequestMethod.rmPOST;
+    2 : RESTRequest1.Method := rmPOST;
+    3 : RESTRequest1.Method := rmPUT;
+    4 : RESTRequest1.Method := rmDELETE;
+  end;
 
   RESTClient1.BaseURL                               := sURLPesquisa;
   RESTClient1.RaiseExceptionOn500                   := true;
 
-  RESTRequest1.Execute;
+  try
+    RESTRequest1.Execute;
+  except
+    pnlResultado.Caption := 'Erro de Conexão ao Servidor';
+  end;
 
   RespCode := RESTResponse1.StatusCode;
 
@@ -174,7 +176,7 @@ begin
 
   end else
   begin
-    pnlResultado.Caption := 'Erro de Conexão ao Servidor';
+    pnlResultado.Caption := 'Erro no servidor: ' + RespCode.ToString;
     pnlResultado.Color   := clGray
   end;
 
@@ -187,8 +189,8 @@ var
   jSonArr : TJSONArray;
   aSon : string;
   Json : TJSONObject;
-  i : integer;
-  sLogin, sAvatar : string;
+  i  : integer;
+  sScore,sLogin, sAvatar, sURL : string;
   Item: TListItem;
 begin
     json    := TJSONObject.ParseJSONValue( TEncoding.UTF8.GetBytes( mmResultJson.Lines.Text ), 0) as TJSONObject;
@@ -201,19 +203,32 @@ begin
 
     ListView1.Clear;
 
+    if jSonArr.Count = 0 then
+    begin
+      mmItensJson.Lines.Add( format(' "%s" não localizado no repositório.', [edtPesquisa.Text]) );
+      exit;
+    end;
+
     for i := 0 to jSonArr.size -1 do
     begin
+      sScore := '';
+
       if iOpcaoMenu = 1 then
       begin
         sLogin  := jSonArr.get(i).GetValue<string>('owner.login') ;
         sAvatar := jSonArr.get(i).GetValue<string>('owner.avatar_url') ;
+        sURL    := jSonArr.get(i).GetValue<string>('owner.url') ;
+        //sScore  := jSonArr.get(i).GetValue<string>('owner.score') ;
       end else
       begin
         sLogin  := jSonArr.get(i).GetValue<string>('login') ;
         sAvatar := jSonArr.get(i).GetValue<string>('avatar_url') ;
+        sURL    := jSonArr.get(i).GetValue<string>('url') ;
+        sScore  := jSonArr.get(i).GetValue<string>('score') ;
       end;
 
-      mmItensJson.Lines.Add( 'Usuário..: ' + sLogin );
+      mmItensJson.Lines.Add( Format('Usuário..: %s -> %s', [sLogin, sScore] ));
+      mmItensJson.Lines.Add( 'URL......: ' + sURL );
 
       Item := ListView1.Items.Add;
       Item.Caption := sLogin;

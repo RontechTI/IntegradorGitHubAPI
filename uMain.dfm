@@ -233,7 +233,7 @@ object Form1: TForm1
           'mmItensJson')
         ParentFont = False
         ReadOnly = True
-        ScrollBars = ssVertical
+        ScrollBars = ssBoth
         TabOrder = 3
       end
       object ListView1: TListView
