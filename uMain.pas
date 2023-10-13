@@ -35,6 +35,12 @@ type
     ListView1: TListView;
     NetHTTPClient1: TNetHTTPClient;
     Label3: TLabel;
+    Panel5: TPanel;
+    star5: TSpeedButton;
+    star4: TSpeedButton;
+    star3: TSpeedButton;
+    star2: TSpeedButton;
+    star1: TSpeedButton;
     procedure btngetClick(Sender: TObject);
     procedure rdOpcoesClick(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -79,6 +85,12 @@ begin
   mmStatus.Clear;
   mmResultJson.Clear;
   mmItensJson.Clear;
+
+  star1.Enabled := false;
+    star2.Enabled := false;
+      star3.Enabled := false;
+        star4.Enabled := false;
+          star5.Enabled := false;
 
   if rdOpcoes.ItemIndex = -1 then
   begin
@@ -244,6 +256,12 @@ var
   Strm: TMemoryStream;
 begin
   Image1.Picture := Nil;
+
+  star1.Enabled := false;
+    star2.Enabled := false;
+      star3.Enabled := false;
+        star4.Enabled := false;
+          star5.Enabled := false;
 
   try
     Screen.Cursor := crHourGlass;
