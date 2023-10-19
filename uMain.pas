@@ -4,10 +4,11 @@ interface
 
 uses System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
      Vcl.Controls, Vcl.Forms, Vcl.Dialogs, REST.Types, Vcl.StdCtrls, Vcl.Buttons,
-     System.Json, System.Net.URLClient, System.Net.HTTPCLient,System.Threading,jpeg,
-     System.Net.HTTPCLientComponent, Vcl.ExtCtrls, Vcl.ComCtrls, FireDAC.Stan.Intf, FireDAC.Stan.Option, FireDAC.Stan.Param,
-     FireDAC.Stan.Error, FireDAC.DatS, FireDAC.Phys.Intf, FireDAC.DApt.Intf, Vcl.WinXCtrls, Data.DB, FireDAC.Comp.DataSet,
-     FireDAC.Comp.Client, REST.Response.Adapter, REST.Client, Data.Bind.Components, Data.Bind.ObjectScope ;
+     System.Threading, jpeg, RESTRequest4D,
+     DataSet.Serialize.Adapter.RESTRequest4D,
+     System.Json, System.Net.URLClient, System.Net.HttpClient, System.Net.HttpClientComponent, REST.Client, Data.Bind.Components,
+     Data.Bind.ObjectScope, Vcl.WinXCtrls, Vcl.ComCtrls, Vcl.ExtCtrls;
+
 
 type
   TForm1 = class(TForm)
@@ -17,9 +18,6 @@ type
     Panel4: TPanel;
     mmStatus: TMemo;
     mmResultJson: TMemo;
-    RESTClient1: TRESTClient;
-    RESTRequest1: TRESTRequest;
-    RESTResponse1: TRESTResponse;
     ActivityIndicator1: TActivityIndicator;
     pnlResultado: TPanel;
     Label1: TLabel;
@@ -35,12 +33,11 @@ type
     ListView1: TListView;
     NetHTTPClient1: TNetHTTPClient;
     Label3: TLabel;
-    Panel5: TPanel;
-    star5: TSpeedButton;
-    star4: TSpeedButton;
-    star3: TSpeedButton;
-    star2: TSpeedButton;
-    star1: TSpeedButton;
+    lblEstrelas: TLabel;
+    lblwatchers: TLabel;
+    lblbranch: TLabel;
+    lblVisibilidade: TLabel;
+    lblHomePage: TLabel;
     procedure btngetClick(Sender: TObject);
     procedure rdOpcoesClick(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -49,16 +46,19 @@ type
     { Private declarations }
      procedure BuscaDadosAPI(aTipo :Integer; aPesquisa:string);
      procedure ObterLista;
+     procedure GetUserParametros(sUrl:string);
+     procedure GetAvatar;
+
   public
     { Public declarations }
   end;
 
 var
   Form1: TForm1;
-  iOpcaoMenu, RespCode : Integer;
+  iOpcaoMenu :integer;
+  Resp,RespFull : IResponse;
 
-
-const GITHUB_API_BASE_URL = 'https://api.github.com/search/';
+const GITHUB_API_BASE_URL = 'https://api.github.com/search';
 
 implementation
 
@@ -66,10 +66,17 @@ implementation
 
 procedure TForm1.FormShow(Sender: TObject);
 begin
+  lblEstrelas.caption     := 'Estrelas.....: ';
+  lblwatchers.caption     := 'Watchers.....: ';
+  lblbranch.caption       := 'Branch.......: ';
+  lblVisibilidade.caption := 'Visiabilidade: ';
+  lblHomePage.caption     := 'Web/URL......: ';
+
   mmStatus.Clear;
   mmResultJson.Clear;
   mmItensJson.Clear;
 end;
+
 
 procedure TForm1.rdOpcoesClick(Sender: TObject);
 begin
@@ -85,13 +92,6 @@ begin
   mmStatus.Clear;
   mmResultJson.Clear;
   mmItensJson.Clear;
-
-  star1.Enabled := false;
-    star2.Enabled := false;
-      star3.Enabled := false;
-        star4.Enabled := false;
-          star5.Enabled := false;
-
   if rdOpcoes.ItemIndex = -1 then
   begin
     ShowMessage( 'Informe uma opção de pesquisa válida');
@@ -120,9 +120,7 @@ begin
      procedure
      begin
        try
-         //Response :=
-         BuscaDadosAPI( ActiveControl.Tag,
-                               trim(edtPesquisa.Text) );
+         BuscaDadosAPI( ActiveControl.Tag,  trim(edtPesquisa.Text) );
 
          ActivityIndicator1.visible:=false;
          ActivityIndicator1.Animate:=false;
@@ -132,11 +130,8 @@ begin
          on E: Exception do
          begin
            ActivityIndicator1.visible:=false;
-           mmStatus.Clear;
-           mmStatus.Lines.add(E.Message);
-           if RespCode <> 200 then
-             ShowMessage('Erro na chamada da API ao servidor web.');
-
+           mmResultJson.Clear;
+           mmResultJson.Lines.add(E.Message);
          end;
        end;
      end);
@@ -150,46 +145,56 @@ begin
   iOpcaoMenu := rdOpcoes.ItemIndex;
 
   case iOpcaoMenu of
-    0 : sURLPesquisa := Format('%susers?q=%s', [GITHUB_API_BASE_URL, aPesquisa]);
-    1 : sURLPesquisa := Format('%srepositories?q=%s', [GITHUB_API_BASE_URL, aPesquisa]);
-    2 : sURLPesquisa := Format('%susers?q=%s&type=org', [GITHUB_API_BASE_URL, aPesquisa]);
+    0 : sURLPesquisa := Format('/users?q=%s', [aPesquisa]);
+    1 : sURLPesquisa := Format('/repositories?q=%s', [aPesquisa]);
+    2 : sURLPesquisa := Format('/users?q=%s&type=org', [aPesquisa]);
   end;
-
-  case aTipo of
-    1 : RESTRequest1.Method := rmGet;   //TRESTRequestMethod.rmPOST;
-    2 : RESTRequest1.Method := rmPOST;
-    3 : RESTRequest1.Method := rmPUT;
-    4 : RESTRequest1.Method := rmDELETE;
-  end;
-
-  RESTClient1.BaseURL                               := sURLPesquisa;
-  RESTClient1.RaiseExceptionOn500                   := true;
-
-  try
-    RESTRequest1.Execute;
-  except
-    pnlResultado.Caption := 'Erro de Conexão ao Servidor';
-  end;
-
-  RespCode := RESTResponse1.StatusCode;
 
   mmStatus.Lines.add( 'Pesquisar por: ' + rdOpcoes.Items[rdOpcoes.ItemIndex] );
-  mmStatus.Lines.add( 'URL..........: ' + sURLPesquisa );
+  mmStatus.Lines.add( 'URL..........: ' + GITHUB_API_BASE_URL + sURLPesquisa );
+  mmStatus.Refresh;
 
-  // Exibir os resultados
-  if RespCode = 200 then
+   case aTipo of
+      1 : Resp := TRequest.New.BaseURL( GITHUB_API_BASE_URL )
+                              .Resource( sURLPesquisa )
+                              .Accept('application/json')
+                              .RaiseExceptionOn500(True)
+                              .Get;
+
+      2 : Resp := TRequest.New.BaseURL( GITHUB_API_BASE_URL )
+                              .Resource( sURLPesquisa )
+                              .ContentType('application/json')
+                              .AddBody('{"email":"email_teste@gmail.com"}')
+                              .Post;
+
+      3 : Resp := TRequest.New.BaseURL( GITHUB_API_BASE_URL )
+                              .Resource( sURLPesquisa )
+                              .ContentType('application/json')
+                              .AddBody('{"email":"email_teste@gmail.com"}')
+                              .Put;
+
+      4 : Resp := TRequest.New.BaseURL( GITHUB_API_BASE_URL )
+                              .Resource( sURLPesquisa )
+                              .Accept('application/json')
+                              .Delete;
+
+    end;
+
+  if Resp.StatusCode = 200 then
   begin
     pnlResultado.Caption := 'Servidor conectado com exito';
     pnlResultado.Color   := clLime;
 
-    mmResultJson.Lines.add( RESTResponse1.JSONText );
+    mmResultJson.Lines.add( Resp.Content );
 
-    ObterLista;
+    if Length(trim(Resp.Content))>0  then
+      ObterLista;
 
   end else
   begin
-    pnlResultado.Caption := 'Erro no servidor: ' + RespCode.ToString;
-    pnlResultado.Color   := clGray
+    pnlResultado.Caption := 'Erro no servidor: ' + Resp.StatusCode.ToString;
+    pnlResultado.Color   := clGray;
+    ShowMessage('Falha na chamada da API ');
   end;
 
   pnlResultado.Refresh;
@@ -202,7 +207,7 @@ var
   aSon : string;
   Json : TJSONObject;
   i  : integer;
-  sScore,sLogin, sAvatar, sURL : string;
+  sLogin, sAvatar, sURL, sUserParametros : string;
   Item: TListItem;
 begin
     json    := TJSONObject.ParseJSONValue( TEncoding.UTF8.GetBytes( mmResultJson.Lines.Text ), 0) as TJSONObject;
@@ -223,45 +228,108 @@ begin
 
     for i := 0 to jSonArr.size -1 do
     begin
-      sScore := '';
-
       if iOpcaoMenu = 1 then
       begin
-        sLogin  := jSonArr.get(i).GetValue<string>('owner.login') ;
-        sAvatar := jSonArr.get(i).GetValue<string>('owner.avatar_url') ;
-        sURL    := jSonArr.get(i).GetValue<string>('owner.url') ;
-        //sScore  := jSonArr.get(i).GetValue<string>('owner.score') ;
+        sLogin    := jSonArr.get(i).GetValue<string>('owner.login') ;
+        sAvatar   := jSonArr.get(i).GetValue<string>('owner.avatar_url') ;
+        sURL      := jSonArr.get(i).GetValue<string>('owner.url') ;
       end else
       begin
         sLogin  := jSonArr.get(i).GetValue<string>('login') ;
         sAvatar := jSonArr.get(i).GetValue<string>('avatar_url') ;
         sURL    := jSonArr.get(i).GetValue<string>('url') ;
-        sScore  := jSonArr.get(i).GetValue<string>('score') ;
       end;
 
-      mmItensJson.Lines.Add( Format('Usuário..: %s -> %s', [sLogin, sScore] ));
+      sUserParametros := Format('https://api.github.com/users/%s/starred', [sLogin] );
+
+      mmItensJson.Lines.Add( Format('Usuário..: %s ', [sLogin] ));
       mmItensJson.Lines.Add( 'URL......: ' + sURL );
 
       Item := ListView1.Items.Add;
       Item.Caption := sLogin;
       Item.SubItems.Add( sAvatar );
+      Item.SubItems.Add( sUserParametros );
 
     end;
     Json.DisposeOf;
 end;
 
+
 procedure TForm1.ListView1Click(Sender: TObject);
+begin
+  lblEstrelas.caption     := 'Estrelas.....: ';
+  lblwatchers.caption     := 'Watchers.....: ';
+  lblbranch.caption       := 'Branch.......: ';
+  lblVisibilidade.caption := 'Visiabilidade: ';
+  lblHomePage.caption     := 'Web/URL......: ';
+
+  TThread.Synchronize(TThread.CurrentThread,
+     procedure
+     begin
+      ActivityIndicator1.visible:=true;
+      ActivityIndicator1.Animate:=True;
+      ActivityIndicator1.Enabled:=true;
+    end);
+
+   TTask.Run(procedure
+   begin
+     Sleep(2000);
+     TThread.Synchronize(TThread.CurrentThread,
+     procedure
+     begin
+        GetUserParametros( ListView1.Items[ListView1.ItemIndex].SubItems[1] );
+        GetAvatar;
+
+        ActivityIndicator1.visible:=false;
+        ActivityIndicator1.Animate:=false;
+        ActivityIndicator1.Enabled:=false;
+     end);
+   end);
+
+end;
+
+procedure TForm1.GetUserParametros(sUrl:string);
+var
+  jSonArr : TJSONArray;
+  aSon : string;
+  Json : TJSONObject;
+  i  : integer;
+begin
+  if Length(trim(sUrl)) = 0 then
+    exit;
+
+   RespFull := TRequest.New.BaseURL( sURL )
+                           .Accept('application/json')
+                           .Get;
+   mmResultJson.Clear;
+   mmResultJson.Lines.Add( RespFull.Content);
+
+  if RespFull.StatusCode = 200 then
+  begin
+    jSonArr    := TJSONObject.ParseJSONValue( TEncoding.UTF8.GetBytes( mmResultJson.Lines.Text ), 0) as TJSONArray;
+
+    if jSonArr.Count = 0 then
+      exit;
+
+    for i := 0 to jSonArr.size -1 do
+    begin
+      lblEstrelas.caption     := 'Estrelas.....: ' + jSonArr.get(i).GetValue<string>('stargazers_count');
+      lblwatchers.caption     := 'Watchers.....: ' + jSonArr.get(i).GetValue<string>('watchers');
+      lblbranch.caption       := 'Branch.......: ' + jSonArr.get(i).GetValue<string>('default_branch');
+      lblVisibilidade.caption := 'Visiabilidade: ' + jSonArr.get(i).GetValue<string>('visibility');
+      lblHomePage.caption     := 'Web/URL......: '     + jSonArr.get(i).GetValue<string>('homepage');
+    end;
+  end;
+
+end;
+
+
+procedure TForm1.GetAvatar;
 var
   Jpeg: TJpegImage;
   Strm: TMemoryStream;
 begin
   Image1.Picture := Nil;
-
-  star1.Enabled := false;
-    star2.Enabled := false;
-      star3.Enabled := false;
-        star4.Enabled := false;
-          star5.Enabled := false;
 
   try
     Screen.Cursor := crHourGlass;
@@ -288,4 +356,5 @@ begin
 end;
 
 end.
+
 
