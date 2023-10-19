@@ -257,11 +257,11 @@ end;
 
 procedure TForm1.ListView1Click(Sender: TObject);
 begin
-  lblEstrelas.caption     := 'Estrelas.....: ';
-  lblwatchers.caption     := 'Watchers.....: ';
-  lblbranch.caption       := 'Branch.......: ';
-  lblVisibilidade.caption := 'Visiabilidade: ';
-  lblHomePage.caption     := 'Web/URL......: ';
+  lblEstrelas.caption     := 'Estrelas....: ';
+  lblwatchers.caption     := 'Watchers....: ';
+  lblbranch.caption       := 'Branch......: ';
+  lblVisibilidade.caption := 'Visibilidade: ';
+  lblHomePage.caption     := 'Web/URL.....: ';
 
   TThread.Synchronize(TThread.CurrentThread,
      procedure
@@ -313,11 +313,11 @@ begin
 
     for i := 0 to jSonArr.size -1 do
     begin
-      lblEstrelas.caption     := 'Estrelas.....: ' + jSonArr.get(i).GetValue<string>('stargazers_count');
-      lblwatchers.caption     := 'Watchers.....: ' + jSonArr.get(i).GetValue<string>('watchers');
-      lblbranch.caption       := 'Branch.......: ' + jSonArr.get(i).GetValue<string>('default_branch');
-      lblVisibilidade.caption := 'Visiabilidade: ' + jSonArr.get(i).GetValue<string>('visibility');
-      lblHomePage.caption     := 'Web/URL......: '     + jSonArr.get(i).GetValue<string>('homepage');
+      lblEstrelas.caption     := 'Estrelas....: ' + jSonArr.get(i).GetValue<string>('stargazers_count');
+      lblwatchers.caption     := 'Watchers....: ' + jSonArr.get(i).GetValue<string>('watchers');
+      lblbranch.caption       := 'Branch......: ' + jSonArr.get(i).GetValue<string>('default_branch');
+      lblVisibilidade.caption := 'Visibilidade: ' + jSonArr.get(i).GetValue<string>('visibility');
+      lblHomePage.caption     := 'Web/URL.....: '     + jSonArr.get(i).GetValue<string>('homepage');
     end;
   end;
 

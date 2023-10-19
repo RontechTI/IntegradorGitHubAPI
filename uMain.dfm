@@ -318,7 +318,7 @@ object Form1: TForm1
         Align = alLeft
         Columns = <
           item
-            Caption = 'Usuario'
+            Caption = 'Login'
             Width = 200
           end
           item
