@@ -58,7 +58,8 @@ var
   iOpcaoMenu :integer;
   Resp,RespFull : IResponse;
 
-const GITHUB_API_BASE_URL = 'https://api.github.com/search';
+const GITHUB_API_BASE_URL = 'https://api.github.com';
+      aToken = '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';
 
 implementation
 
@@ -115,7 +116,7 @@ begin
 
    TTask.Run(procedure
    begin
-     Sleep(2000);
+
      TThread.Synchronize(TThread.CurrentThread,
      procedure
      begin
@@ -145,14 +146,20 @@ begin
   iOpcaoMenu := rdOpcoes.ItemIndex;
 
   case iOpcaoMenu of
-    0 : sURLPesquisa := Format('/users?q=%s', [aPesquisa]);
-    1 : sURLPesquisa := Format('/repositories?q=%s', [aPesquisa]);
-    2 : sURLPesquisa := Format('/users?q=%s&type=org', [aPesquisa]);
+    0 : sURLPesquisa := Format('/search/users?q=%s', [aPesquisa]);
+    1 : sURLPesquisa := Format('/search/repositories?q=%s', [aPesquisa]);
+    2 : sURLPesquisa := Format('/search/users?q=%s&type=org', [aPesquisa]);
   end;
+
+  if aTipo<>1 then
+     sURLPesquisa:= '/users/' + aPesquisa;
 
   mmStatus.Lines.add( 'Pesquisar por: ' + rdOpcoes.Items[rdOpcoes.ItemIndex] );
   mmStatus.Lines.add( 'URL..........: ' + GITHUB_API_BASE_URL + sURLPesquisa );
   mmStatus.Refresh;
+
+  //https://api.github.com/users/Rontechti
+  TRequest.New.Token('Bearer ' + aToken );
 
    case aTipo of
       1 : Resp := TRequest.New.BaseURL( GITHUB_API_BASE_URL )
@@ -163,13 +170,14 @@ begin
 
       2 : Resp := TRequest.New.BaseURL( GITHUB_API_BASE_URL )
                               .Resource( sURLPesquisa )
-                              .ContentType('application/json')
+                              .Accept('application/json' )
                               .AddBody('{"email":"email_teste@gmail.com"}')
                               .Post;
 
+
       3 : Resp := TRequest.New.BaseURL( GITHUB_API_BASE_URL )
                               .Resource( sURLPesquisa )
-                              .ContentType('application/json')
+                              .Accept('application/json' )
                               .AddBody('{"email":"email_teste@gmail.com"}')
                               .Put;
 
@@ -273,7 +281,6 @@ begin
 
    TTask.Run(procedure
    begin
-     Sleep(2000);
      TThread.Synchronize(TThread.CurrentThread,
      procedure
      begin
@@ -317,7 +324,7 @@ begin
       lblwatchers.caption     := 'Watchers....: ' + jSonArr.get(i).GetValue<string>('watchers');
       lblbranch.caption       := 'Branch......: ' + jSonArr.get(i).GetValue<string>('default_branch');
       lblVisibilidade.caption := 'Visibilidade: ' + jSonArr.get(i).GetValue<string>('visibility');
-      lblHomePage.caption     := 'Web/URL.....: '     + jSonArr.get(i).GetValue<string>('homepage');
+      lblHomePage.caption     := 'Web/URL.....: ' + jSonArr.get(i).GetValue<string>('homepage');
     end;
   end;
 
@@ -329,7 +336,7 @@ var
   Jpeg: TJpegImage;
   Strm: TMemoryStream;
 begin
-  Image1.Picture := Nil;
+  Image1.Picture := nil;
 
   try
     Screen.Cursor := crHourGlass;

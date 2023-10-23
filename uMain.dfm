@@ -26,7 +26,6 @@ object Form1: TForm1
     Height = 99
     Align = alTop
     TabOrder = 0
-    ExplicitWidth = 1011
     object Label1: TLabel
       Left = 179
       Top = 22
@@ -128,7 +127,6 @@ object Form1: TForm1
     Height = 584
     Align = alClient
     TabOrder = 1
-    ExplicitWidth = 1011
     object Panel4: TPanel
       Left = 1
       Top = 1
@@ -136,8 +134,6 @@ object Form1: TForm1
       Height = 582
       Align = alClient
       TabOrder = 0
-      ExplicitTop = 5
-      ExplicitWidth = 1009
       object Image1: TImage
         Left = 548
         Top = 124
@@ -251,7 +247,6 @@ object Form1: TForm1
         ParentFont = False
         ReadOnly = True
         TabOrder = 0
-        ExplicitWidth = 1007
       end
       object mmResultJson: TMemo
         Left = 1
@@ -270,8 +265,6 @@ object Form1: TForm1
         ParentFont = False
         ScrollBars = ssVertical
         TabOrder = 1
-        ExplicitTop = 381
-        ExplicitWidth = 1007
       end
       object pnlResultado: TPanel
         Left = 1
@@ -289,7 +282,6 @@ object Form1: TForm1
         ParentBackground = False
         ParentFont = False
         TabOrder = 2
-        ExplicitWidth = 1007
       end
       object mmItensJson: TMemo
         Left = 1
